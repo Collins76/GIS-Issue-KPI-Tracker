@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
+import { Skeleton } from '../ui/skeleton';
 
 type IssueListProps = {
   issues: Issue[];
@@ -35,6 +37,11 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
     status: '',
     priority: '',
   });
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleFilterChange = (filterName: string, value: string) => {
     setFilters((prev) => ({ ...prev, [filterName]: value }));
@@ -60,27 +67,37 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
       </CardHeader>
       <CardContent>
         <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Select onValueChange={(value) => handleFilterChange('role', value)} suppressHydrationWarning>
-            <SelectTrigger><SelectValue placeholder="Filter by Role" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Roles</SelectItem>
-              {ROLES.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select onValueChange={(value) => handleFilterChange('status', value)} suppressHydrationWarning>
-            <SelectTrigger><SelectValue placeholder="Filter by Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
-              {STATUSES.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select onValueChange={(value) => handleFilterChange('priority', value)} suppressHydrationWarning>
-            <SelectTrigger><SelectValue placeholder="Filter by Priority" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Priorities</SelectItem>
-              {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          {isClient ? (
+            <>
+              <Select onValueChange={(value) => handleFilterChange('role', value)} >
+                <SelectTrigger><SelectValue placeholder="Filter by Role" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Roles</SelectItem>
+                  {ROLES.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select onValueChange={(value) => handleFilterChange('status', value)} >
+                <SelectTrigger><SelectValue placeholder="Filter by Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Statuses</SelectItem>
+                  {STATUSES.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select onValueChange={(value) => handleFilterChange('priority', value)} >
+                <SelectTrigger><SelectValue placeholder="Filter by Priority" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Priorities</SelectItem>
+                  {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </>
+          ) : (
+            <>
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </>
+          )}
         </div>
 
         <div className="rounded-md border">

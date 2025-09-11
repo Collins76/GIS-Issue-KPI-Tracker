@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
@@ -13,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Send, RotateCcw, Loader2 } from 'lucide-react';
 import { Issue, ROLES, PRIORITIES, STATUSES, Role } from '@/lib/types';
+import { Skeleton } from '../ui/skeleton';
 
 const formSchema = z.object({
   role: z.string().min(1, { message: 'Role is required.' }),
@@ -31,6 +33,11 @@ type IssueFormProps = {
 export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFormProps) {
   const [kpiSuggestions, setKpiSuggestions] = useState<string[]>([]);
   const [isKpiLoading, startKpiTransition] = useTransition();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -96,7 +103,8 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} suppressHydrationWarning>
+                  {isClient ? (
+                  <Select onValueChange={field.onChange} value={field.value} >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a role" />
@@ -108,6 +116,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                       ))}
                     </SelectContent>
                   </Select>
+                  ) : <Skeleton className="h-10 w-full" />}
                   <FormMessage />
                 </FormItem>
               )}
@@ -120,7 +129,8 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                 <FormItem>
                   <FormLabel>KPI Parameter</FormLabel>
                    <div className="flex items-center gap-2">
-                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedRole || isKpiLoading} suppressHydrationWarning>
+                    {isClient ? (
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedRole || isKpiLoading} >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={isKpiLoading ? "Loading KPIs..." : "Select a KPI parameter"} />
@@ -132,6 +142,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                         ))}
                       </SelectContent>
                     </Select>
+                    ) : <Skeleton className="h-10 w-full" />}
                     {isKpiLoading && <Loader2 className="h-5 w-5 animate-spin" />}
                   </div>
                   <FormMessage />
@@ -159,7 +170,8 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Priority</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} suppressHydrationWarning>
+                  {isClient ? (
+                  <Select onValueChange={field.onChange} value={field.value} >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select priority" />
@@ -171,6 +183,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                       ))}
                     </SelectContent>
                   </Select>
+                  ) : <Skeleton className="h-10 w-full" />}
                   <FormMessage />
                 </FormItem>
               )}
@@ -182,7 +195,8 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} suppressHydrationWarning>
+                  {isClient ? (
+                  <Select onValueChange={field.onChange} value={field.value} >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
@@ -194,6 +208,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                       ))}
                     </SelectContent>
                   </Select>
+                  ) : <Skeleton className="h-10 w-full" />}
                   <FormMessage />
                 </FormItem>
               )}
