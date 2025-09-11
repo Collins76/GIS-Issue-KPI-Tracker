@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Send, RotateCcw, Loader2 } from 'lucide-react';
 import { Issue, ROLES, PRIORITIES, STATUSES, Role } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
+import { useIsClient } from '@/hooks/use-is-client';
 
 const formSchema = z.object({
   role: z.string().min(1, { message: 'Role is required.' }),
@@ -33,11 +34,7 @@ type IssueFormProps = {
 export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFormProps) {
   const [kpiSuggestions, setKpiSuggestions] = useState<string[]>([]);
   const [isKpiLoading, startKpiTransition] = useTransition();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const isClient = useIsClient();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
