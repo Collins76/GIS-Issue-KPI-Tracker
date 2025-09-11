@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
 import { Skeleton } from '../ui/skeleton';
-import { useIsClient } from '@/hooks/use-is-client';
 
 type IssueListProps = {
   issues: Issue[];
@@ -38,7 +37,12 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
     status: 'all',
     priority: 'all',
   });
-  const isClient = useIsClient();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
 
   const handleFilterChange = (filterName: string, value: string) => {
     setFilters((prev) => ({ ...prev, [filterName]: value }));
@@ -64,7 +68,7 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
       </CardHeader>
       <CardContent>
         <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {isClient ? (
+          {mounted ? (
             <>
               <Select onValueChange={(value) => handleFilterChange('role', value)} defaultValue="all">
                 <SelectTrigger><SelectValue placeholder="Filter by Role" /></SelectTrigger>

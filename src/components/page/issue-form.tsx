@@ -15,7 +15,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Send, RotateCcw, Loader2 } from 'lucide-react';
 import { Issue, ROLES, PRIORITIES, STATUSES, Role } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
-import { useIsClient } from '@/hooks/use-is-client';
 
 const formSchema = z.object({
   role: z.string().min(1, { message: 'Role is required.' }),
@@ -34,7 +33,11 @@ type IssueFormProps = {
 export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFormProps) {
   const [kpiSuggestions, setKpiSuggestions] = useState<string[]>([]);
   const [isKpiLoading, startKpiTransition] = useTransition();
-  const isClient = useIsClient();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -100,7 +103,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
-                  {isClient ? (
+                  {mounted ? (
                   <Select onValueChange={field.onChange} value={field.value} >
                     <FormControl>
                       <SelectTrigger>
@@ -126,7 +129,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                 <FormItem>
                   <FormLabel>KPI Parameter</FormLabel>
                    <div className="flex items-center gap-2">
-                    {isClient ? (
+                    {mounted ? (
                     <Select onValueChange={field.onChange} value={field.value} disabled={!selectedRole || isKpiLoading} >
                       <FormControl>
                         <SelectTrigger>
@@ -167,7 +170,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Priority</FormLabel>
-                  {isClient ? (
+                  {mounted ? (
                   <Select onValueChange={field.onChange} value={field.value} >
                     <FormControl>
                       <SelectTrigger>
@@ -192,7 +195,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                  {isClient ? (
+                  {mounted ? (
                   <Select onValueChange={field.onChange} value={field.value} >
                     <FormControl>
                       <SelectTrigger>
