@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
@@ -7,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { suggestKpi } from '@/ai/flows/kpi-suggestion-tool';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -87,12 +86,13 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
   }
 
   return (
-    <Card className="shadow-lg border-primary/20">
+    <Card className="shadow-lg border-none bg-card">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 font-headline">
-          <PlusCircle className="text-primary" />
+        <CardTitle className="flex items-center gap-2 font-headline text-primary">
+          <PlusCircle />
           {issueToEdit ? 'Edit Issue' : 'Report New Issue'}
         </CardTitle>
+        <CardDescription>Fill out the form below to report or update an issue.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -127,7 +127,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               name="kpiParameter"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>KPI Parameter</FormLabel>
+                  <FormLabel>AI Suggested KPI Parameter</FormLabel>
                    <div className="flex items-center gap-2">
                     {mounted ? (
                     <Select onValueChange={field.onChange} value={field.value} disabled={!selectedRole || isKpiLoading} >
@@ -143,7 +143,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                       </SelectContent>
                     </Select>
                     ) : <Skeleton className="h-10 w-full" />}
-                    {isKpiLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+                    {isKpiLoading && <Loader2 className="h-5 w-5 animate-spin text-secondary" />}
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -214,12 +214,12 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               )}
             />
 
-            <div className="flex space-x-2">
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+            <div className="flex space-x-2 pt-4">
+              <Button type="submit" variant="secondary" className="hover:bg-primary hover:-translate-y-0.5" disabled={form.formState.isSubmitting}>
                 <Send />
                 {issueToEdit ? 'Save Changes' : 'Submit Issue'}
               </Button>
-              <Button type="button" variant="outline" onClick={() => {
+              <Button type="button" variant="outline" className="hover:-translate-y-0.5" onClick={() => {
                 issueToEdit ? onCancelEdit() : form.reset()
               }}>
                 <RotateCcw />

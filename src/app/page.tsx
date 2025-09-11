@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import useLocalStorage from '@/hooks/use-local-storage';
-import { type Issue, type Status, type Priority, type Role } from '@/lib/types';
+import { type Issue } from '@/lib/types';
 import { generateKpiAlert } from '@/ai/flows/real-time-kpi-alerts';
 
 import AppHeader from '@/components/page/app-header';
@@ -55,6 +55,8 @@ export default function Home() {
         toast({
           title: "New KPI Alert",
           description: alertResult.alertMessage,
+          variant: 'default',
+          className: 'bg-secondary text-secondary-foreground'
         });
       } catch (error) {
         console.error("Failed to generate KPI alert:", error);
@@ -74,7 +76,7 @@ export default function Home() {
         title: "Success",
         description: "Issue deleted successfully.",
         variant: 'default',
-        className: 'bg-success text-success-foreground'
+        className: 'bg-destructive text-destructive-foreground'
       });
     }
   };

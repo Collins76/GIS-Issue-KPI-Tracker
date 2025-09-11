@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,6 +29,14 @@ const statusConfig: { [key: string]: { className: string } } = {
   'In Progress': { className: "bg-warning/10 text-warning border-warning/20" },
   Resolved: { className: "bg-success/10 text-success border-success/20" },
 };
+
+const priorityConfig: { [key: string]: { className: string } } = {
+  Low: { className: "text-muted-foreground" },
+  Medium: { className: "text-primary" },
+  High: { className: "text-warning" },
+  Critical: { className: "text-destructive" },
+};
+
 
 export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) {
   const [filters, setFilters] = useState({
@@ -59,12 +66,13 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
   }, [issues, filters]);
 
   return (
-    <Card className="shadow-lg border-primary/20">
+    <Card className="shadow-lg border-none bg-card">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 font-headline">
-          <ListChecks className="text-primary" />
+        <CardTitle className="flex items-center gap-2 font-headline text-primary">
+          <ListChecks />
           Track Issues
         </CardTitle>
+        <CardDescription>View, filter, and manage all reported issues.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -115,10 +123,10 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
             <TableBody>
               {filteredIssues.length > 0 ? (
                 filteredIssues.map((issue) => (
-                  <TableRow key={issue.id}>
+                  <TableRow key={issue.id} className="hover:bg-secondary/10">
                     <TableCell className="font-medium max-w-[200px] truncate">{issue.kpiParameter}</TableCell>
-                    <TableCell className="hidden md:table-cell">{issue.role}</TableCell>
-                    <TableCell>{issue.priority}</TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">{issue.role}</TableCell>
+                    <TableCell className={cn("font-semibold", priorityConfig[issue.priority]?.className)}>{issue.priority}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn("font-semibold", statusConfig[issue.status]?.className)}>
                         {issue.status}
@@ -133,10 +141,10 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onEdit(issue.id)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          <DropdownMenuItem onClick={() => onEdit(issue.id)} className="hover:bg-warning/10">
+                            <Pencil className="mr-2 h-4 w-4 text-warning" /> Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onDelete(issue.id)} className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem onClick={() => onDelete(issue.id)} className="text-destructive focus:text-destructive hover:bg-destructive/10">
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
