@@ -60,21 +60,21 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
       </CardHeader>
       <CardContent>
         <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Select onValueChange={(value) => handleFilterChange('role', value)}>
+          <Select onValueChange={(value) => handleFilterChange('role', value)} suppressHydrationWarning>
             <SelectTrigger><SelectValue placeholder="Filter by Role" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="">All Roles</SelectItem>
               {ROLES.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select onValueChange={(value) => handleFilterChange('status', value)}>
+          <Select onValueChange={(value) => handleFilterChange('status', value)} suppressHydrationWarning>
             <SelectTrigger><SelectValue placeholder="Filter by Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="">All Statuses</SelectItem>
               {STATUSES.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select onValueChange={(value) => handleFilterChange('priority', value)}>
+          <Select onValueChange={(value) => handleFilterChange('priority', value)} suppressHydrationWarning>
             <SelectTrigger><SelectValue placeholder="Filter by Priority" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="">All Priorities</SelectItem>

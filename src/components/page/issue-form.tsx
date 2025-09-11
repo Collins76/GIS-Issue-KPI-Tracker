@@ -96,7 +96,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} suppressHydrationWarning>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a role" />
@@ -120,7 +120,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                 <FormItem>
                   <FormLabel>KPI Parameter</FormLabel>
                    <div className="flex items-center gap-2">
-                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedRole || isKpiLoading}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedRole || isKpiLoading} suppressHydrationWarning>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={isKpiLoading ? "Loading KPIs..." : "Select a KPI parameter"} />
@@ -159,7 +159,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Priority</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} suppressHydrationWarning>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select priority" />
@@ -182,7 +182,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} suppressHydrationWarning>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
