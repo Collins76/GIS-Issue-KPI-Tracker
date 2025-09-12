@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import {
@@ -63,6 +63,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { uploadFromUrl } from './actions';
 
 
 type UploadedFile = {
@@ -84,6 +85,7 @@ export default function FileManagerPage() {
   const [webUrl, setWebUrl] = useState('');
   const router = useRouter();
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -142,48 +144,36 @@ export default function FileManagerPage() {
       return;
     }
     
-    // Basic validation for URL
-    try {
-      const url = new URL(webUrl);
-      const fileName = url.pathname.split('/').pop() || 'upload-from-web';
-
-      setUploading(true);
-      setUploadProgress(0);
-
-      // We can't directly upload from a URL on the client-side due to CORS.
-      // This needs a server-side component (like a Firebase Function) to fetch the file
-      // and then upload it to storage.
-      // For now, we will simulate this and show a message.
-      toast({
-        title: 'Web Upload In-Progress',
-        description: 'Server-side fetching is not implemented. This is a placeholder.',
-        className: 'bg-warning text-warning-foreground'
-      });
-
-      // Simulate a fetch and upload
-      setTimeout(() => {
-        setUploadProgress(50);
-        setTimeout(() => {
-          setUploadProgress(100);
-          setUploading(false);
-          toast({
-            title: 'Web Upload (Simulated)',
-            description: `File from ${url.hostname} would be uploaded.`,
-            className: 'bg-success text-success-foreground'
+    setUploading(true);
+    
+    startTransition(async () => {
+      try {
+        const result = await uploadFromUrl(webUrl, user.uid);
+        if (result.error) {
+           toast({
+            variant: "destructive",
+            title: "Upload Failed",
+            description: result.error,
           });
-          // In a real implementation, you would call fetchFiles() here.
-        }, 1000)
-      }, 1000);
-
-
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Invalid URL",
-        description: "The URL you entered is not valid.",
-      });
-      setUploading(false);
-    }
+        } else {
+           toast({
+            title: "Upload Successful",
+            description: `File "${result.fileName}" has been uploaded from the web.`,
+            className: 'bg-success text-success-foreground',
+          });
+          fetchFiles(user.uid);
+        }
+      } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Upload Failed",
+            description: "An unexpected error occurred during web upload.",
+          });
+      } finally {
+        setUploading(false);
+        setWebUrl('');
+      }
+    });
   }
 
 
@@ -217,7 +207,9 @@ export default function FileManagerPage() {
         });
         setUploading(false);
         setUploadProgress(0);
-        fetchFiles(user.uid);
+        if (user) {
+          fetchFiles(user.uid);
+        }
       }
     );
   };
@@ -365,17 +357,17 @@ export default function FileManagerPage() {
                   placeholder="https://example.com/image.png"
                   value={webUrl}
                   onChange={(e) => setWebUrl(e.target.value)}
-                  disabled={uploading}
+                  disabled={uploading || isPending}
                 />
-                <Button onClick={handleWebUpload} disabled={uploading}>
-                  <Globe />
+                <Button onClick={handleWebUpload} disabled={uploading || isPending}>
+                  {isPending ? <Loader2 className="animate-spin" /> : <Globe />}
                   Upload from URL
                 </Button>
               </TabsContent>
             </Tabs>
-            {uploading && (
+            {uploading && !isPending && (
               <div className="mt-4 space-y-2">
-                <p>Uploading...</p>
+                <p>Uploading from computer...</p>
                 <Progress value={uploadProgress} className="w-full" />
               </div>
             )}
