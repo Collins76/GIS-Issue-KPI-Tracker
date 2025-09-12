@@ -25,7 +25,7 @@ export async function uploadFromUrl(url: string, userId: string) {
   } catch (error: any) {
     console.error('Server-side upload error:', error);
     if (error instanceof TypeError && error.message.includes('Invalid URL')) {
-       return { error: 'The URL you entered is not valid.' };
+       return { error: 'The URL you entered is not valid. Please check and try again.' };
     }
     return { error: 'An unexpected error occurred on the server.' };
   }
