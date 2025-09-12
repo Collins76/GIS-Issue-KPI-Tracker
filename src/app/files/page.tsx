@@ -140,18 +140,9 @@ export default function FileManagerPage() {
     try {
       const url = new URL(urlString);
       const validProtocols = ['http:', 'https:'];
-      const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.txt', '.csv'];
       
       if (!validProtocols.includes(url.protocol)) {
         return { valid: false, error: 'Only HTTP and HTTPS URLs are allowed.' };
-      }
-      
-      const hasValidExtension = validExtensions.some(ext => 
-        url.pathname.toLowerCase().endsWith(ext)
-      );
-      
-      if (!hasValidExtension) {
-        return { valid: false, error: 'File must be an image, PDF, or text file.' };
       }
       
       return { valid: true, error: null };
@@ -429,7 +420,7 @@ export default function FileManagerPage() {
                  <div className="flex gap-2">
                     <Input
                       type="url"
-                      placeholder="https://example.com/image.png"
+                      placeholder="https://example.com/file.zip"
                       value={webUrl}
                       onChange={(e) => setWebUrl(e.target.value)}
                       disabled={uploading}
