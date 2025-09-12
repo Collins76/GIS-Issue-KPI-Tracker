@@ -5,7 +5,7 @@ import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User, signOut 
 import { auth, database } from '@/lib/firebase';
 import { ref, set, serverTimestamp, push } from "firebase/database";
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Loader2 } from 'lucide-react';
+import { LogIn, LogOut, Loader2, History } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
@@ -109,6 +110,13 @@ export default function AuthButton() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/sessions">
+              <History className="mr-2 h-4 w-4" />
+              <span>Session History</span>
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive hover:bg-destructive/10">
             <LogOut className="mr-2 h-4 w-4" />
