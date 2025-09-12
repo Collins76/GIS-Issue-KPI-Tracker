@@ -9,7 +9,8 @@ import {
   getDownloadURL,
   listAll,
   deleteObject,
-  updateMetadata,
+  getBlob,
+  uploadBytes,
   type StorageReference,
 } from 'firebase/storage';
 import { auth, storage } from '@/lib/firebase';
@@ -203,7 +204,7 @@ export default function FileManagerPage() {
         toast({
           variant: 'destructive',
           title: 'Upload Failed',
-          description: 'There was an error uploading your file.',
+          description: 'There was an error uploading your file. Check storage rules.',
         });
         setUploading(false);
       },
@@ -276,11 +277,9 @@ export default function FileManagerPage() {
     const newFileRef = ref(storage, `uploads/${user.uid}/${finalNewName}`);
   
     try {
-      const url = await getDownloadURL(editingFile.ref);
-      const response = await fetch(url);
-      const blob = await response.blob();
+      const blob = await getBlob(editingFile.ref);
       
-      await uploadBytesResumable(newFileRef, blob);
+      await uploadBytes(newFileRef, blob);
       await deleteObject(editingFile.ref);
       
       toast({
@@ -413,7 +412,7 @@ export default function FileManagerPage() {
                     </TableRow>
                   ) : files.length > 0 ? (
                     files.map((file) => (
-                      <TableRow key={file.name}>
+                      <TableRow key={file.ref.fullPath}>
                         <TableCell className="font-medium max-w-[150px] sm:max-w-xs truncate">{file.name}</TableCell>
                         <TableCell className="hidden sm:table-cell">{formatBytes(file.size)}</TableCell>
                         <TableCell className="text-right">
@@ -431,7 +430,7 @@ export default function FileManagerPage() {
                               <DropdownMenuItem
                                 onClick={() => {
                                   setEditingFile(file);
-                                  setNewFileName(file.name.split('.').slice(0, -1).join('.'));
+                                  setNewFileName(file.name.includes('.') ? file.name.split('.').slice(0, -1).join('.') : file.name);
                                 }}
                               >
                                 <Pencil className="mr-2 h-4 w-4" /> Rename
@@ -462,7 +461,7 @@ export default function FileManagerPage() {
       </div>
 
       {/* Rename File Dialog */}
-      <AlertDialog open={!!editingFile} onOpenChange={() => setEditingFile(null)}>
+      <AlertDialog open={!!editingFile} onOpenChange={(v) => !v && setEditingFile(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Rename File</AlertDialogTitle>
@@ -483,7 +482,7 @@ export default function FileManagerPage() {
       </AlertDialog>
 
       {/* Delete File Dialog */}
-      <AlertDialog open={!!deletingFile} onOpenChange={() => setDeletingFile(null)}>
+      <AlertDialog open={!!deletingFile} onOpenChange={(v) => !v && setDeletingFile(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
