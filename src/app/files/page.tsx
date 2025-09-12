@@ -209,16 +209,14 @@ export default function FileManagerPage() {
         setUploading(false);
       },
       () => {
-        getDownloadURL(uploadTask.snapshot.ref).then(() => {
-          toast({
-            title: 'Upload Successful',
-            description: `File "${fileName}" has been uploaded.`,
-            className: 'bg-success text-success-foreground',
-          });
-          setUploading(false);
-          setUploadProgress(0);
-          fetchFiles(user.uid);
+        toast({
+          title: 'Upload Successful',
+          description: `File "${fileName}" has been uploaded.`,
+          className: 'bg-success text-success-foreground',
         });
+        setUploading(false);
+        setUploadProgress(0);
+        fetchFiles(user.uid);
       }
     );
   };
