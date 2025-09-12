@@ -60,10 +60,11 @@ import {
   Loader2,
   Folder,
   Globe,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { uploadFromUrl } from './actions';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 type UploadedFile = {
@@ -83,6 +84,7 @@ export default function FileManagerPage() {
   const [deletingFile, setDeletingFile] = useState<UploadedFile | null>(null);
   const [newFileName, setNewFileName] = useState('');
   const [webUrl, setWebUrl] = useState('');
+  const [webUploadError, setWebUploadError] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -134,84 +136,150 @@ export default function FileManagerPage() {
     uploadFile(file, file.name);
   };
   
-  const handleWebUpload = async () => {
-    if (!webUrl || !user) {
-      toast({
-        variant: "destructive",
-        title: "Invalid URL",
-        description: "Please enter a valid URL to upload from.",
-      });
-      return;
-    }
-    
-    setUploading(true);
-    
-    startTransition(async () => {
-      try {
-        const result = await uploadFromUrl(webUrl, user.uid);
-        if (result.error) {
-           toast({
-            variant: "destructive",
-            title: "Upload Failed",
-            description: result.error,
-          });
-        } else {
-           toast({
-            title: "Upload Successful",
-            description: `File "${result.fileName}" has been uploaded from the web.`,
-            className: 'bg-success text-success-foreground',
-          });
-          fetchFiles(user.uid);
-        }
-      } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Upload Failed",
-            description: "An unexpected error occurred during web upload.",
-          });
-      } finally {
-        setUploading(false);
-        setWebUrl('');
+  const validateURL = (urlString: string) => {
+    try {
+      const url = new URL(urlString);
+      const validProtocols = ['http:', 'https:'];
+      const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.txt', '.csv'];
+      
+      if (!validProtocols.includes(url.protocol)) {
+        return { valid: false, error: 'Only HTTP and HTTPS URLs are allowed.' };
       }
-    });
-  }
+      
+      const hasValidExtension = validExtensions.some(ext => 
+        url.pathname.toLowerCase().endsWith(ext)
+      );
+      
+      if (!hasValidExtension) {
+        return { valid: false, error: 'File must be an image, PDF, or text file.' };
+      }
+      
+      return { valid: true, error: null };
+    } catch (e) {
+      return { valid: false, error: 'Invalid URL format.' };
+    }
+  };
 
+  const getWebUploadErrorMessage = (error: any) => {
+    if (error.message.includes('CORS')) {
+      return 'The file cannot be accessed due to CORS restrictions. Try downloading and uploading directly.';
+    }
+    if (error.message.includes('Network') || error.message.includes('fetch')) {
+      return 'Network error. Please check your internet connection and the URL and try again.';
+    }
+    if (error.message.includes('timeout')) {
+      return 'Upload timed out. The file might be too large or the server too slow.';
+    }
+    return error.message || 'An unexpected error occurred. Please try again.';
+  };
 
-  const uploadFile = (file: Blob, fileName: string) => {
-    if (!user) return;
-    const storageRef = ref(storage, `uploads/${user.uid}/${fileName}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
+  const handleWebUpload = async () => {
+    if (!webUrl.trim() || !user) return;
+    
     setUploading(true);
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress =
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setUploadProgress(progress);
-      },
-      (error) => {
-        console.error('Upload error:', error);
+    setWebUploadError(null);
+    setUploadProgress(10);
+    
+    try {
+      const validation = validateURL(webUrl);
+      if (!validation.valid) {
+        throw new Error(validation.error as string);
+      }
+      setUploadProgress(20);
+
+      // We skip HEAD request due to likely CORS issues in browser, and go straight to fetch
+      console.log('📥 Downloading file from URL...');
+      const response = await fetch(webUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+      }
+      setUploadProgress(60);
+
+      const blob = await response.blob();
+       if (blob.size === 0) {
+        throw new Error('Downloaded file is empty.');
+      }
+      console.log('📁 File downloaded:', blob.size, 'bytes, type:', blob.type);
+      setUploadProgress(80);
+
+      const filename = webUrl.split('/').pop()?.split('?')[0] || 'downloaded-file';
+      const file = new File([blob], filename, { type: blob.type });
+
+      await uploadFile(file, filename, true); // Pass a flag to indicate web upload
+      setUploadProgress(100);
+
+      toast({
+        title: "Upload Successful",
+        description: `File "${filename}" has been uploaded from the web.`,
+        className: 'bg-success text-success-foreground',
+      });
+      setWebUrl('');
+
+    } catch (error: any) {
+      console.error('❌ URL upload failed:', error);
+      setWebUploadError(getWebUploadErrorMessage(error));
+    } finally {
+      setUploading(false);
+      setTimeout(() => setUploadProgress(0), 2000);
+    }
+  };
+
+
+  const uploadFile = (file: Blob, fileName: string, isWebUpload = false) => {
+     return new Promise<void>((resolve, reject) => {
+      if (!user) {
+        const err = new Error("User not authenticated.");
+        console.error(err);
+        if (isWebUpload) return reject(err);
+        
         toast({
           variant: 'destructive',
-          title: 'Upload Failed',
-          description: 'There was an error uploading your file. Check storage rules.',
+          title: 'Authentication Error',
+          description: "You must be signed in to upload files.",
         });
-        setUploading(false);
-      },
-      () => {
-        toast({
-          title: 'Upload Successful',
-          description: `File "${fileName}" has been uploaded.`,
-          className: 'bg-success text-success-foreground',
-        });
-        setUploading(false);
-        setUploadProgress(0);
-        if (user) {
-          fetchFiles(user.uid);
-        }
+        return reject(err);
       }
-    );
+
+      const storageRef = ref(storage, `uploads/${user.uid}/${fileName}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      if(!isWebUpload) setUploading(true);
+      
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          if(!isWebUpload) setUploadProgress(progress);
+        },
+        (error) => {
+          console.error('Upload error:', error);
+          const toastError = {
+            variant: 'destructive',
+            title: 'Upload Failed',
+            description: 'There was an error uploading your file. Check storage rules.',
+          };
+          if (isWebUpload) return reject(error);
+          toast(toastError as any);
+          setUploading(false);
+          reject(error);
+        },
+        () => {
+          if(!isWebUpload) {
+            toast({
+              title: 'Upload Successful',
+              description: `File "${fileName}" has been uploaded.`,
+              className: 'bg-success text-success-foreground',
+            });
+            setUploading(false);
+            setUploadProgress(0);
+          }
+          fetchFiles(user.uid);
+          resolve();
+        }
+      );
+    });
   };
 
 
@@ -350,27 +418,45 @@ export default function FileManagerPage() {
                   disabled={uploading}
                   className="file:text-secondary-foreground file:bg-secondary file:border-none file:font-semibold"
                 />
+                 {uploading && !webUrl && (
+                  <div className="mt-4 space-y-2">
+                    <p>Uploading from computer...</p>
+                    <Progress value={uploadProgress} className="w-full" />
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="web" className="mt-4 space-y-3">
-                <Input
-                  type="url"
-                  placeholder="https://example.com/image.png"
-                  value={webUrl}
-                  onChange={(e) => setWebUrl(e.target.value)}
-                  disabled={uploading || isPending}
-                />
-                <Button onClick={handleWebUpload} disabled={uploading || isPending}>
-                  {isPending ? <Loader2 className="animate-spin" /> : <Globe />}
-                  Upload from URL
-                </Button>
+                 <div className="flex gap-2">
+                    <Input
+                      type="url"
+                      placeholder="https://example.com/image.png"
+                      value={webUrl}
+                      onChange={(e) => setWebUrl(e.target.value)}
+                      disabled={uploading}
+                    />
+                    <Button onClick={handleWebUpload} disabled={uploading || !webUrl.trim()}>
+                      {uploading ? <Loader2 className="animate-spin" /> : <Globe />}
+                      Upload
+                    </Button>
+                 </div>
+                {uploading && uploadProgress > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Uploading from URL...</span>
+                        <span>{Math.round(uploadProgress)}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="w-full" />
+                  </div>
+                )}
+                {webUploadError && (
+                  <Alert variant="destructive">
+                    <XCircle className="h-4 w-4" />
+                    <AlertTitle>Upload Failed</AlertTitle>
+                    <AlertDescription>{webUploadError}</AlertDescription>
+                  </Alert>
+                )}
               </TabsContent>
             </Tabs>
-            {uploading && !isPending && (
-              <div className="mt-4 space-y-2">
-                <p>Uploading from computer...</p>
-                <Progress value={uploadProgress} className="w-full" />
-              </div>
-            )}
           </CardContent>
         </Card>
 
