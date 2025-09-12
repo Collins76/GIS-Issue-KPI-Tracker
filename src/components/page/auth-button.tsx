@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, database } from '@/lib/firebase';
+import { ref, set, serverTimestamp, push } from "firebase/database";
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -33,7 +34,26 @@ export default function AuthButton() {
     setIsSigningIn(true);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Write user info to Realtime Database
+      const userProfileRef = ref(database, `users/${user.uid}/profile`);
+      set(userProfileRef, {
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+      });
+
+      // Log the session
+      const sessionLogRef = ref(database, `users/${user.uid}/sessions`);
+      const newSessionRef = push(sessionLogRef);
+      set(newSessionRef, {
+        loginTime: serverTimestamp(),
+      });
+
     } catch (error: any) {
       console.error('Error signing in with Google', error);
        let errorMessage = 'Sign-in failed. Please try again.';

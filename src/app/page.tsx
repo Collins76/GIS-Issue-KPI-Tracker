@@ -6,7 +6,7 @@ import { type Issue } from '@/lib/types';
 import { generateKpiAlert } from '@/ai/flows/real-time-kpi-alerts';
 import { auth, database } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { ref, onValue, set, remove, update } from 'firebase/database';
+import { ref, onValue, set, remove, update, push, serverTimestamp } from 'firebase/database';
 import { useRouter } from 'next/navigation';
 
 import AppHeader from '@/components/page/app-header';
@@ -26,7 +26,9 @@ export default function Home() {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setIsLoading(false); 
+      if (!currentUser) {
+        setIsLoading(false);
+      }
     });
 
     return () => unsubscribeAuth();
@@ -35,7 +37,7 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       setIsLoading(true);
-      const issuesRef = ref(database, `issues/${user.uid}`);
+      const issuesRef = ref(database, `users/${user.uid}/issues`);
       const unsubscribeDB = onValue(issuesRef, (snapshot) => {
         const data = snapshot.val();
         const issuesList = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
@@ -43,6 +45,11 @@ export default function Home() {
         setIsLoading(false);
       }, (error) => {
         console.error(error);
+        toast({
+          variant: "destructive",
+          title: "Database Error",
+          description: "Could not fetch issues.",
+        });
         setIsLoading(false);
       });
 
@@ -50,7 +57,18 @@ export default function Home() {
     } else {
       setIssues([]);
     }
-  }, [user]);
+  }, [user, toast]);
+
+  const logActivity = (action: string, details: object) => {
+    if (!user) return;
+    const activityLogRef = ref(database, `users/${user.uid}/activityLog`);
+    const newActivityRef = push(activityLogRef);
+    set(newActivityRef, {
+      timestamp: serverTimestamp(),
+      action,
+      details,
+    });
+  };
 
   const handleSaveIssue = async (data: Omit<Issue, 'id' | 'date'>) => {
     if (!user) {
@@ -63,8 +81,9 @@ export default function Home() {
     }
 
     if (editingIssue) {
-      const issueRef = ref(database, `issues/${user.uid}/${editingIssue.id}`);
+      const issueRef = ref(database, `users/${user.uid}/issues/${editingIssue.id}`);
       await update(issueRef, data);
+      logActivity('updated_issue', { issueId: editingIssue.id, ...data });
       toast({
         title: "Success",
         description: "Issue updated successfully.",
@@ -73,13 +92,14 @@ export default function Home() {
       });
       setEditingIssue(null);
     } else {
-      const id = Date.now().toString();
+      const issuesRef = ref(database, `users/${user.uid}/issues`);
+      const newIssueRef = push(issuesRef);
       const newIssue: Omit<Issue, 'id'> = {
         ...data,
         date: new Date().toISOString(),
       };
-      const issueRef = ref(database, `issues/${user.uid}/${id}`);
-      await set(issueRef, newIssue);
+      await set(newIssueRef, newIssue);
+      logActivity('created_issue', { issueId: newIssueRef.key, ...data });
 
       toast({
         title: "Success",
@@ -120,8 +140,9 @@ export default function Home() {
       return;
     }
     if (window.confirm('Are you sure you want to delete this issue?')) {
-      const issueRef = ref(database, `issues/${user.uid}/${id}`);
+      const issueRef = ref(database, `users/${user.uid}/issues/${id}`);
       await remove(issueRef);
+      logActivity('deleted_issue', { issueId: id });
       toast({
         title: "Success",
         description: "Issue deleted successfully.",
@@ -173,7 +194,7 @@ export default function Home() {
       ) : (
          <div className="text-center mt-16 p-8 bg-card rounded-xl shadow-lg animate-fade-in">
           {isLoading ? (
-             <Loader2 className="h-12 w-12 animate-spin text-secondary" />
+             <div className="flex justify-center items-center h-64"><Loader2 className="h-12 w-12 animate-spin text-secondary" /></div>
           ) : (
             <>
               <h2 className="text-2xl font-bold text-primary font-headline">Welcome to the GIS KPI Tracker</h2>
