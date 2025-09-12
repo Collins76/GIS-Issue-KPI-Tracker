@@ -4,7 +4,6 @@ import { useEffect, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { suggestKpi } from '@/ai/flows/kpi-suggestion-tool';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -14,6 +13,45 @@ import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Send, RotateCcw, Loader2 } from 'lucide-react';
 import { Issue, ROLES, PRIORITIES, STATUSES, Role } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
+
+const kpiData: Record<Role, string[]> = {
+    "GIS Coordinator": [
+        "Develop and implement a comprehensive 2 GIS strategy to support Ikeja Electric's business goals",
+        "Full integration of GIS data to ensure 100% accuracy in capturing all IE network assets",
+        "Provide technical and mentorship training to GIS Leads, Specialists and Analysts",
+        "Complete 100% of GIS projects within agreed timelines to support organizational objectives",
+        "Identify and implement one outstanding new technology to improve network efficiency and reliability"
+    ],
+    "GIS Lead": [
+        "Complete 100% of GIS projects within agreed timelines to support organizational objectives",
+        "Provide technical and mentorship training to GIS Specialists and Analysts",
+        "Ensure the accuracy and quality of all GIS data and map products delivered by the team",
+        "Full integration of GIS data to ensure 100% accuracy in capturing all IE network assets",
+        "Identify and implement one outstanding new technology to improve network efficiency and reliability"
+    ],
+    "GIS Specialist": [
+        "Complete 100% of GIS projects within agreed timelines to support organizational objectives",
+        "Provide technical and mentorship training to GIS Analysts",
+        "Full integration of GIS data to ensure 100% accuracy in capturing all IE network assets",
+        "Resolve 100% of GIS technical issues within 24 hours",
+        "Identify and implement one outstanding new technology to improve network efficiency and reliability"
+    ],
+    "Geodatabase Specialist": [
+        "Ensure the integrity, security, and optimal performance of the enterprise geodatabase",
+        "Provide technical and mentorship training to GIS Analysts",
+        "Ensure the accuracy and quality of all GIS data during maintenance window with the commercial department",
+        "Full integration of GIS data to ensure 100% accuracy in capturing all IE network assets",
+        "Identify and implement one outstanding new technology to improve network efficiency and reliability"
+    ],
+    "GIS Analyst": [
+        "Capture, process, and integrate spatial and non-spatial data from various sources into the GIS database",
+        "Perform quality assurance checks on all incoming and existing GIS data to ensure accuracy and completeness",
+        "Full integration of GIS data to ensure 100% accuracy in capturing all IE network assets",
+        "Resolve 100% of GIS technical issues within 24 hours",
+        "Identify and implement one outstanding new technology to improve network efficiency and reliability"
+    ]
+};
+
 
 const formSchema = z.object({
   role: z.string().min(1, { message: 'Role is required.' }),
@@ -31,7 +69,6 @@ type IssueFormProps = {
 
 export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFormProps) {
   const [kpiSuggestions, setKpiSuggestions] = useState<string[]>([]);
-  const [isKpiLoading, startKpiTransition] = useTransition();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -49,7 +86,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
     },
   });
 
-  const selectedRole = form.watch('role');
+  const selectedRole = form.watch('role') as Role;
 
   useEffect(() => {
     if (issueToEdit) {
@@ -66,13 +103,9 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
   }, [issueToEdit, form]);
 
   useEffect(() => {
-    if (selectedRole) {
-      startKpiTransition(async () => {
-        setKpiSuggestions([]);
+    if (selectedRole && kpiData[selectedRole]) {
+        setKpiSuggestions(kpiData[selectedRole]);
         form.setValue('kpiParameter', '');
-        const { suggestions } = await suggestKpi({ role: selectedRole as Role });
-        setKpiSuggestions(suggestions);
-      });
     } else {
       setKpiSuggestions([]);
     }
@@ -83,6 +116,31 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
     if (!issueToEdit) {
       form.reset();
     }
+  }
+
+  if (!mounted) {
+    return (
+      <Card className="shadow-lg border-none bg-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-headline text-primary">
+            <PlusCircle />
+            Report New Issue
+          </CardTitle>
+          <CardDescription>Fill out the form below to report or update an issue.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <div className="flex space-x-2 pt-4">
+            <Skeleton className="h-10 w-36" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -103,7 +161,6 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
-                  {mounted ? (
                   <Select onValueChange={field.onChange} value={field.value} >
                     <FormControl>
                       <SelectTrigger>
@@ -116,7 +173,6 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                       ))}
                     </SelectContent>
                   </Select>
-                  ) : <Skeleton className="h-10 w-full" />}
                   <FormMessage />
                 </FormItem>
               )}
@@ -127,13 +183,12 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               name="kpiParameter"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>AI Suggested KPI Parameter</FormLabel>
+                  <FormLabel>KPI Parameter</FormLabel>
                    <div className="flex items-center gap-2">
-                    {mounted ? (
-                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedRole || isKpiLoading} >
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedRole} >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={isKpiLoading ? "Loading KPIs..." : "Select a KPI parameter"} />
+                          <SelectValue placeholder={!selectedRole ? "Select a role first" : "Select a KPI parameter"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -142,8 +197,6 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                         ))}
                       </SelectContent>
                     </Select>
-                    ) : <Skeleton className="h-10 w-full" />}
-                    {isKpiLoading && <Loader2 className="h-5 w-5 animate-spin text-secondary" />}
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -170,7 +223,6 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Priority</FormLabel>
-                  {mounted ? (
                   <Select onValueChange={field.onChange} value={field.value} >
                     <FormControl>
                       <SelectTrigger>
@@ -183,7 +235,6 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                       ))}
                     </SelectContent>
                   </Select>
-                  ) : <Skeleton className="h-10 w-full" />}
                   <FormMessage />
                 </FormItem>
               )}
@@ -195,7 +246,6 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                  {mounted ? (
                   <Select onValueChange={field.onChange} value={field.value} >
                     <FormControl>
                       <SelectTrigger>
@@ -208,7 +258,6 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
                       ))}
                     </SelectContent>
                   </Select>
-                  ) : <Skeleton className="h-10 w-full" />}
                   <FormMessage />
                 </FormItem>
               )}
