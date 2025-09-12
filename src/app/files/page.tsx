@@ -61,6 +61,7 @@ import {
   Folder,
   Globe,
   XCircle,
+  Eye,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -257,20 +258,35 @@ export default function FileManagerPage() {
           reject(error);
         },
         () => {
-          if(!isWebUpload) {
-            toast({
-              title: 'Upload Successful',
-              description: `File "${fileName}" has been uploaded.`,
-              className: 'bg-success text-success-foreground',
-            });
-            setUploading(false);
-            setUploadProgress(0);
-          }
-          fetchFiles(user.uid);
-          resolve();
+          getDownloadURL(uploadTask.snapshot.ref).then(() => {
+            if(!isWebUpload) {
+              toast({
+                title: 'Upload Successful',
+                description: `File "${fileName}" has been uploaded.`,
+                className: 'bg-success text-success-foreground',
+              });
+              setUploading(false);
+              setUploadProgress(0);
+            }
+            fetchFiles(user.uid);
+            resolve();
+          });
         }
       );
     });
+  };
+
+  const handleView = async (file: UploadedFile) => {
+    try {
+      const url = await getDownloadURL(file.ref);
+      window.open(url, '_blank');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'View Failed',
+        description: 'Could not get file URL.',
+      });
+    }
   };
 
 
@@ -492,6 +508,9 @@ export default function FileManagerPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleView(file)}>
+                                <Eye className="mr-2 h-4 w-4" /> View
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownload(file)}>
                                 <Download className="mr-2 h-4 w-4" /> Download
                               </DropdownMenuItem>
