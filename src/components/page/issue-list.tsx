@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
 import { Skeleton } from '../ui/skeleton';
+import { useIsClient } from '@/hooks/use-is-client';
 
 type IssueListProps = {
   issues: Issue[];
@@ -40,15 +41,11 @@ const priorityConfig: { [key: string]: { className: string } } = {
 
 export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) {
   const [filters, setFilters] = useState({
-    role: 'all',
-    status: 'all',
-    priority: 'all',
+    role: '',
+    status: '',
+    priority: '',
   });
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const isClient = useIsClient();
 
 
   const handleFilterChange = (filterName: string, value: string) => {
@@ -58,9 +55,9 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
       return (
-        (filters.role !== 'all' ? issue.role === filters.role : true) &&
-        (filters.status !== 'all' ? issue.status === filters.status : true) &&
-        (filters.priority !== 'all' ? issue.priority === filters.priority : true)
+        (filters.role ? issue.role === filters.role : true) &&
+        (filters.status ? issue.status === filters.status : true) &&
+        (filters.priority ? issue.priority === filters.priority : true)
       );
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [issues, filters]);
@@ -76,26 +73,26 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
       </CardHeader>
       <CardContent>
         <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {mounted ? (
+          {isClient ? (
             <>
-              <Select onValueChange={(value) => handleFilterChange('role', value)} defaultValue="all">
+              <Select onValueChange={(value) => handleFilterChange('role', value)} defaultValue="">
                 <SelectTrigger><SelectValue placeholder="Filter by Role" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="">All Roles</SelectItem>
                   {ROLES.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select onValueChange={(value) => handleFilterChange('status', value)} defaultValue="all">
+              <Select onValueChange={(value) => handleFilterChange('status', value)} defaultValue="">
                 <SelectTrigger><SelectValue placeholder="Filter by Status" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="">All Statuses</SelectItem>
                   {STATUSES.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select onValueChange={(value) => handleFilterChange('priority', value)} defaultValue="all">
+              <Select onValueChange={(value) => handleFilterChange('priority', value)} defaultValue="">
                 <SelectTrigger><SelectValue placeholder="Filter by Priority" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Priorities</SelectItem>
+                  <SelectItem value="">All Priorities</SelectItem>
                   {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                 </SelectContent>
               </Select>

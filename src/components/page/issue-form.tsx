@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Send, RotateCcw, Loader2 } from 'lucide-react';
 import { Issue, ROLES, PRIORITIES, STATUSES, Role } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
+import { useIsClient } from '@/hooks/use-is-client';
 
 const kpiData: Record<Role, string[]> = {
     "GIS Coordinator": [
@@ -69,11 +70,7 @@ type IssueFormProps = {
 
 export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFormProps) {
   const [kpiSuggestions, setKpiSuggestions] = useState<string[]>([]);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const isClient = useIsClient();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -118,7 +115,7 @@ export default function IssueForm({ onSave, issueToEdit, onCancelEdit }: IssueFo
     }
   }
 
-  if (!mounted) {
+  if (!isClient) {
     return (
       <Card className="shadow-lg border-none bg-card">
         <CardHeader>
