@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, User as UserIcon } from 'lucide-react';
+import { LogIn, LogOut, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -15,9 +14,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useToast } from '@/hooks/use-toast';
 
 export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const { toast } = useToast();
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -27,11 +30,35 @@ export default function AuthButton() {
   }, []);
 
   const handleSignIn = async () => {
+    setIsSigningIn(true);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing in with Google', error);
+       let errorMessage = 'Sign-in failed. Please try again.';
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+        case 'auth/cancelled-popup-request':
+          // Silent handling
+          return;
+        case 'auth/popup-blocked':
+          errorMessage = 'Popup was blocked. Please allow popups and try again.';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = 'Network error. Please check your connection.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many attempts. Please try again later.';
+          break;
+      }
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: errorMessage,
+      });
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
@@ -40,6 +67,11 @@ export default function AuthButton() {
       await signOut(auth);
     } catch (error) {
       console.error('Error signing out', error);
+       toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to sign out.",
+      });
     }
   };
 
@@ -68,9 +100,18 @@ export default function AuthButton() {
   }
 
   return (
-    <Button onClick={handleSignIn} variant="secondary" className="hover:bg-primary hover:-translate-y-0.5">
-      <LogIn />
-      Sign In with Google
+    <Button onClick={handleSignIn} variant="secondary" className="hover:bg-primary hover:-translate-y-0.5" disabled={isSigningIn}>
+      {isSigningIn ? (
+        <>
+          <Loader2 className="animate-spin" />
+          Signing in...
+        </>
+      ) : (
+        <>
+          <LogIn />
+          Sign In with Google
+        </>
+      )}
     </Button>
   );
 }
