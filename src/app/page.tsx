@@ -24,26 +24,33 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (currentUser) {
-        setIsLoading(true);
-        const issuesRef = ref(database, `issues/${currentUser.uid}`);
-        const unsubscribeDB = onValue(issuesRef, (snapshot) => {
-          const data = snapshot.val();
-          const issuesList = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-          setIssues(issuesList);
-          setIsLoading(false);
-        });
-        return () => unsubscribeDB();
-      } else {
-        setIssues([]);
-        setIsLoading(false);
-      }
+      setIsLoading(false); 
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setIsLoading(true);
+      const issuesRef = ref(database, `issues/${user.uid}`);
+      const unsubscribeDB = onValue(issuesRef, (snapshot) => {
+        const data = snapshot.val();
+        const issuesList = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+        setIssues(issuesList);
+        setIsLoading(false);
+      }, (error) => {
+        console.error(error);
+        setIsLoading(false);
+      });
+
+      return () => unsubscribeDB();
+    } else {
+      setIssues([]);
+    }
+  }, [user]);
 
   const handleSaveIssue = async (data: Omit<Issue, 'id' | 'date'>) => {
     if (!user) {
@@ -164,9 +171,15 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <div className="text-center mt-16 p-8 bg-card rounded-xl shadow-lg animate-fade-in">
-          <h2 className="text-2xl font-bold text-primary font-headline">Welcome to the GIS KPI Tracker</h2>
-          <p className="mt-2 text-muted-foreground">Please sign in to report and track issues.</p>
+         <div className="text-center mt-16 p-8 bg-card rounded-xl shadow-lg animate-fade-in">
+          {isLoading ? (
+             <Loader2 className="h-12 w-12 animate-spin text-secondary" />
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-primary font-headline">Welcome to the GIS KPI Tracker</h2>
+              <p className="mt-2 text-muted-foreground">Please sign in to report and track issues.</p>
+            </>
+          )}
         </div>
       )}
     </div>
