@@ -41,9 +41,9 @@ const priorityConfig: { [key: string]: { className: string } } = {
 
 export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) {
   const [filters, setFilters] = useState({
-    role: '',
-    status: '',
-    priority: '',
+    role: 'all',
+    status: 'all',
+    priority: 'all',
   });
   const isClient = useIsClient();
 
@@ -55,9 +55,9 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
       return (
-        (filters.role ? issue.role === filters.role : true) &&
-        (filters.status ? issue.status === filters.status : true) &&
-        (filters.priority ? issue.priority === filters.priority : true)
+        (filters.role !== 'all' ? issue.role === filters.role : true) &&
+        (filters.status !== 'all' ? issue.status === filters.status : true) &&
+        (filters.priority !== 'all' ? issue.priority === filters.priority : true)
       );
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [issues, filters]);
@@ -75,24 +75,24 @@ export default function IssueList({ issues, onEdit, onDelete }: IssueListProps) 
         <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           {isClient ? (
             <>
-              <Select onValueChange={(value) => handleFilterChange('role', value)} defaultValue="">
+              <Select onValueChange={(value) => handleFilterChange('role', value)} defaultValue="all">
                 <SelectTrigger><SelectValue placeholder="Filter by Role" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Roles</SelectItem>
+                  <SelectItem value="all">All Roles</SelectItem>
                   {ROLES.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select onValueChange={(value) => handleFilterChange('status', value)} defaultValue="">
+              <Select onValueChange={(value) => handleFilterChange('status', value)} defaultValue="all">
                 <SelectTrigger><SelectValue placeholder="Filter by Status" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   {STATUSES.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select onValueChange={(value) => handleFilterChange('priority', value)} defaultValue="">
+              <Select onValueChange={(value) => handleFilterChange('priority', value)} defaultValue="all">
                 <SelectTrigger><SelectValue placeholder="Filter by Priority" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Priorities</SelectItem>
+                  <SelectItem value="all">All Priorities</SelectItem>
                   {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                 </SelectContent>
               </Select>
