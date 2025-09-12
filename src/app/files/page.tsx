@@ -12,6 +12,7 @@ import {
   getBlob,
   uploadBytes,
   type StorageReference,
+  getMetadata,
 } from 'firebase/storage';
 import { auth, storage } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -104,7 +105,7 @@ export default function FileManagerPage() {
       const res = await listAll(filesRef);
       const filesData = await Promise.all(
         res.items.map(async (itemRef) => {
-          const metadata = await itemRef.getMetadata();
+          const metadata = await getMetadata(itemRef);
           return {
             ref: itemRef,
             name: metadata.name,
