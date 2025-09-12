@@ -1,7 +1,9 @@
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import {
   ref,
@@ -51,6 +53,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
   UploadCloud,
   File as FileIcon,
   MoreHorizontal,
@@ -83,6 +92,7 @@ export default function FileManagerPage() {
   const [isLoadingFiles, setIsLoadingFiles] = useState(true);
   const [editingFile, setEditingFile] = useState<UploadedFile | null>(null);
   const [deletingFile, setDeletingFile] = useState<UploadedFile | null>(null);
+  const [previewingFileUrl, setPreviewingFileUrl] = useState<string | null>(null);
   const [newFileName, setNewFileName] = useState('');
   const [webUrl, setWebUrl] = useState('');
   const [webUploadError, setWebUploadError] = useState<string | null>(null);
@@ -139,13 +149,7 @@ export default function FileManagerPage() {
   
   const validateURL = (urlString: string) => {
     try {
-      const url = new URL(urlString);
-      const validProtocols = ['http:', 'https:'];
-      
-      if (!validProtocols.includes(url.protocol)) {
-        return { valid: false, error: 'Only HTTP and HTTPS URLs are allowed.' };
-      }
-      
+      new URL(urlString);
       return { valid: true, error: null };
     } catch (e) {
       return { valid: false, error: 'Invalid URL format.' };
@@ -179,7 +183,6 @@ export default function FileManagerPage() {
       }
       setUploadProgress(20);
 
-      // We skip HEAD request due to likely CORS issues in browser, and go straight to fetch
       console.log('📥 Downloading file from URL...');
       const response = await fetch(webUrl);
       
@@ -198,7 +201,7 @@ export default function FileManagerPage() {
       const filename = webUrl.split('/').pop()?.split('?')[0] || 'downloaded-file';
       const file = new File([blob], filename, { type: blob.type });
 
-      await uploadFile(file, filename, true); // Pass a flag to indicate web upload
+      await uploadFile(file, filename, true); 
       setUploadProgress(100);
 
       toast({
@@ -276,10 +279,19 @@ export default function FileManagerPage() {
     });
   };
 
+  const isImageFile = (fileName: string) => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    return imageExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
+  };
+
   const handleView = async (file: UploadedFile) => {
     try {
       const url = await getDownloadURL(file.ref);
-      window.open(url, '_blank');
+      if (isImageFile(file.name)) {
+        setPreviewingFileUrl(url);
+      } else {
+        window.open(url, '_blank');
+      }
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -509,7 +521,7 @@ export default function FileManagerPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => handleView(file)}>
-                                <Eye className="mr-2 h-4 w-4" /> View
+                                <Eye className="mr-2 h-4 w-4" /> View / Preview
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownload(file)}>
                                 <Download className="mr-2 h-4 w-4" /> Download
@@ -546,6 +558,26 @@ export default function FileManagerPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewingFileUrl} onOpenChange={(isOpen) => !isOpen && setPreviewingFileUrl(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Image Preview</DialogTitle>
+          </DialogHeader>
+          {previewingFileUrl && (
+             <div className="relative aspect-video mt-2">
+                <Image 
+                    src={previewingFileUrl} 
+                    alt="Image preview" 
+                    fill
+                    className="object-contain"
+                />
+             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
 
       {/* Rename File Dialog */}
       <AlertDialog open={!!editingFile} onOpenChange={(v) => !v && setEditingFile(null)}>
@@ -588,3 +620,4 @@ export default function FileManagerPage() {
     </div>
   );
 }
+
