@@ -57,8 +57,11 @@ import {
   Trash2,
   Loader2,
   Folder,
+  Globe,
 } from 'lucide-react';
 import Link from 'next/link';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 type UploadedFile = {
   ref: StorageReference;
@@ -76,6 +79,7 @@ export default function FileManagerPage() {
   const [editingFile, setEditingFile] = useState<UploadedFile | null>(null);
   const [deletingFile, setDeletingFile] = useState<UploadedFile | null>(null);
   const [newFileName, setNewFileName] = useState('');
+  const [webUrl, setWebUrl] = useState('');
   const router = useRouter();
   const { toast } = useToast();
 
@@ -123,8 +127,67 @@ export default function FileManagerPage() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+    uploadFile(file, file.name);
+  };
+  
+  const handleWebUpload = async () => {
+    if (!webUrl || !user) {
+      toast({
+        variant: "destructive",
+        title: "Invalid URL",
+        description: "Please enter a valid URL to upload from.",
+      });
+      return;
+    }
+    
+    // Basic validation for URL
+    try {
+      const url = new URL(webUrl);
+      const fileName = url.pathname.split('/').pop() || 'upload-from-web';
 
-    const storageRef = ref(storage, `uploads/${user.uid}/${file.name}`);
+      setUploading(true);
+      setUploadProgress(0);
+
+      // We can't directly upload from a URL on the client-side due to CORS.
+      // This needs a server-side component (like a Firebase Function) to fetch the file
+      // and then upload it to storage.
+      // For now, we will simulate this and show a message.
+      toast({
+        title: 'Web Upload In-Progress',
+        description: 'Server-side fetching is not implemented. This is a placeholder.',
+        className: 'bg-warning text-warning-foreground'
+      });
+
+      // Simulate a fetch and upload
+      setTimeout(() => {
+        setUploadProgress(50);
+        setTimeout(() => {
+          setUploadProgress(100);
+          setUploading(false);
+          toast({
+            title: 'Web Upload (Simulated)',
+            description: `File from ${url.hostname} would be uploaded.`,
+            className: 'bg-success text-success-foreground'
+          });
+          // In a real implementation, you would call fetchFiles() here.
+        }, 1000)
+      }, 1000);
+
+
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Invalid URL",
+        description: "The URL you entered is not valid.",
+      });
+      setUploading(false);
+    }
+  }
+
+
+  const uploadFile = (file: Blob, fileName: string) => {
+    if (!user) return;
+    const storageRef = ref(storage, `uploads/${user.uid}/${fileName}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
     setUploading(true);
@@ -148,15 +211,17 @@ export default function FileManagerPage() {
         getDownloadURL(uploadTask.snapshot.ref).then(() => {
           toast({
             title: 'Upload Successful',
-            description: `File "${file.name}" has been uploaded.`,
+            description: `File "${fileName}" has been uploaded.`,
             className: 'bg-success text-success-foreground',
           });
           setUploading(false);
+          setUploadProgress(0);
           fetchFiles(user.uid);
         });
       }
     );
   };
+
 
   const handleDownload = async (file: UploadedFile) => {
     try {
@@ -201,7 +266,7 @@ export default function FileManagerPage() {
     
     const originalName = editingFile.name;
     const fileExtension = originalName.includes('.') ? '.' + originalName.split('.').pop() : '';
-    const finalNewName = newFileName.endsWith(fileExtension) ? newFileName : newFileName + fileExtension;
+    const finalNewName = newFileName.endsWith(fileExtension || '') ? newFileName : newFileName + fileExtension;
   
     if (finalNewName === originalName) {
       setEditingFile(null);
@@ -211,26 +276,28 @@ export default function FileManagerPage() {
     const newFileRef = ref(storage, `uploads/${user.uid}/${finalNewName}`);
   
     try {
-      // It's not possible to "rename" a file in Firebase Storage directly.
-      // The common pattern is to copy the file to a new path and delete the old one.
-      // However, `firebase/storage` v9 SDK does not have a copy method.
-      // We will use `updateMetadata` to change the `name` property.
-      // This doesn't change the path, but changes the displayed name in some contexts.
-      // For a true rename, one would need to download and re-upload.
-      // For simplicity here, we'll just show that editing is complex.
-      // A more robust solution might involve server-side functions.
+      const url = await getDownloadURL(editingFile.ref);
+      const response = await fetch(url);
+      const blob = await response.blob();
+      
+      await uploadBytesResumable(newFileRef, blob);
+      await deleteObject(editingFile.ref);
+      
       toast({
-        title: "Renaming not supported yet",
-        description: "A true file rename requires download and re-upload. This feature is coming soon!",
-        variant: 'default',
+        title: "File Renamed",
+        description: `"${originalName}" was renamed to "${finalNewName}".`,
+        className: 'bg-success text-success-foreground',
       });
+
+      fetchFiles(user.uid);
       setEditingFile(null);
+
     } catch (error) {
       console.error("Rename error:", error);
       toast({
         variant: "destructive",
         title: "Rename Failed",
-        description: "Could not rename the file.",
+        description: "Could not rename the file. Please try again.",
       });
     }
   };
@@ -279,17 +346,35 @@ export default function FileManagerPage() {
               <UploadCloud className="glowing-icon" />
               Upload New File
             </CardTitle>
-            <CardDescription>
-              Select a file from your computer to upload.
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Input
-              type="file"
-              onChange={handleFileUpload}
-              disabled={uploading}
-              className="file:text-secondary-foreground file:bg-secondary file:border-none file:font-semibold"
-            />
+            <Tabs defaultValue="computer" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="computer">From Computer</TabsTrigger>
+                <TabsTrigger value="web">From Web</TabsTrigger>
+              </TabsList>
+              <TabsContent value="computer" className="mt-4">
+                <Input
+                  type="file"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="file:text-secondary-foreground file:bg-secondary file:border-none file:font-semibold"
+                />
+              </TabsContent>
+              <TabsContent value="web" className="mt-4 space-y-3">
+                <Input
+                  type="url"
+                  placeholder="https://example.com/image.png"
+                  value={webUrl}
+                  onChange={(e) => setWebUrl(e.target.value)}
+                  disabled={uploading}
+                />
+                <Button onClick={handleWebUpload} disabled={uploading}>
+                  <Globe />
+                  Upload from URL
+                </Button>
+              </TabsContent>
+            </Tabs>
             {uploading && (
               <div className="mt-4 space-y-2">
                 <p>Uploading...</p>
