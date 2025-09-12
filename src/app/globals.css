@@ -65,3 +65,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes glow {
+    0%, 100% {
+      filter: drop-shadow(0 0 2px hsla(var(--secondary), 0.8));
+    }
+    50% {
+      filter: drop-shadow(0 0 8px hsla(var(--secondary), 0.8));
+    }
+  }
+  
+  .animate-glow {
+    animation: glow 3s ease-in-out infinite;
+  }
+
+  .glowing-icon {
+    @apply animate-glow;
+  }
+}
