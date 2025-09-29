@@ -5,7 +5,7 @@ import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User, signOut 
 import { auth, database } from '@/lib/firebase';
 import { ref, set, serverTimestamp, push } from "firebase/database";
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Loader2, History } from 'lucide-react';
+import { LogIn, LogOut, Loader2, History, Folder } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -73,10 +73,10 @@ export default function AuthButton() {
           errorMessage = 'Network error. Please check your connection.';
           break;
         case 'auth/unauthorized-domain':
-           errorMessage = 'This domain is not authorized for sign-in. Please add it to the authorized domains in your Firebase console.';
+           errorMessage = 'This domain is not authorized for sign-in. Go to the Firebase console and add this app\'s domain to the list of authorized domains in the "Authentication" -> "Settings" tab.';
            break;
         case 'auth/operation-not-allowed':
-          errorMessage = 'Google Sign-In is not enabled for this project. Please enable it in the Firebase console.';
+          errorMessage = 'Google Sign-In is not enabled for this project. Please enable it in the Firebase console under "Authentication" -> "Sign-in method".';
           break;
         case 'auth/too-many-requests':
           errorMessage = 'Too many attempts. Please try again later.';
@@ -123,6 +123,12 @@ export default function AuthButton() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
+           <DropdownMenuItem asChild>
+            <Link href="/files">
+              <Folder className="mr-2 h-4 w-4" />
+              <span>File Manager</span>
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/sessions">
               <History className="mr-2 h-4 w-4" />
