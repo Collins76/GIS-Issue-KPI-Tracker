@@ -58,26 +58,38 @@ export default function AuthButton() {
     } catch (error: any) {
       console.error('Error signing in with Google', error);
        let errorMessage = 'Sign-in failed. Please try again.';
+      // See: https://firebase.google.com/docs/auth/web/handle-errors
       switch (error.code) {
         case 'auth/popup-closed-by-user':
         case 'auth/cancelled-popup-request':
-          // Silent handling
-          return;
+          // This is a common case, so we can handle it silently
+          // by not showing a toast.
+          errorMessage = ''; 
+          break;
         case 'auth/popup-blocked':
           errorMessage = 'Popup was blocked. Please allow popups and try again.';
           break;
         case 'auth/network-request-failed':
           errorMessage = 'Network error. Please check your connection.';
           break;
+        case 'auth/unauthorized-domain':
+           errorMessage = 'This domain is not authorized for sign-in. Please add it to the authorized domains in your Firebase console.';
+           break;
+        case 'auth/operation-not-allowed':
+          errorMessage = 'Google Sign-In is not enabled for this project. Please enable it in the Firebase console.';
+          break;
         case 'auth/too-many-requests':
           errorMessage = 'Too many attempts. Please try again later.';
           break;
       }
-      toast({
-        variant: "destructive",
-        title: "Authentication Error",
-        description: errorMessage,
-      });
+      
+      if (errorMessage) {
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: errorMessage,
+        });
+      }
     } finally {
       setIsSigningIn(false);
     }
